@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentCompletedCourseMapper">
+
+    <resultMap id="CompletedCourseResultMap" type="com.example.entity.StudentCompletedCourse">
+        <id property="id" column="id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="courseId" column="course_id"/>
+        <result property="collegeId" column="college_id"/>
+        <result property="specialityId" column="speciality_id"/>
+        <result property="courseName" column="course_name"/>
+        <result property="teacherName" column="teacher_name"/>
+        <result property="collegeName" column="college_name"/>
+        <result property="specialityName" column="speciality_name"/>
+        <result property="credit" column="credit"/>
+        <result property="general" column="is_general"/>
+        <result property="completedAt" column="completed_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.entity.StudentCompletedCourse" useGeneratedKeys="true" keyProperty="id">
+        insert into student_completed_course (student_id, course_id, completed_at)
+        values (#{studentId}, #{courseId}, #{completedAt})
+    </insert>
+
+    <select id="selectByStudentId" resultMap="CompletedCourseResultMap">
+        select
+            scc.id,
+            scc.student_id,
+            scc.course_id,
+            scc.completed_at,
+            course.college_id,
+            course.speciality_id,
+            course.is_general,
+            course.name as course_name,
+            teacher.name as teacher_name,
+            college.name as college_name,
+            speciality.name as speciality_name,
+            course.credit
+        from student_completed_course scc
+        left join course on scc.course_id = course.id
+        left join teacher on course.teacher_id = teacher.id
+        left join college on course.college_id = college.id
+        left join speciality on course.speciality_id = speciality.id
+        where scc.student_id = #{studentId}
+        order by scc.completed_at desc, scc.id desc
+    </select>
+
+</mapper>

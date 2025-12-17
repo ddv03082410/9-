@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.CourseMapper">
+
+    <resultMap id="CourseResultMap" type="com.example.entity.Course">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="content" column="content"/>
+        <result property="credit" column="credit"/>
+        <result property="teacherId" column="teacher_id"/>
+        <result property="num" column="num"/>
+        <result property="time" column="time"/>
+        <result property="location" column="location"/>
+        <result property="collegeId" column="college_id"/>
+        <result property="alreadyNum" column="already_num"/>
+        <result property="specialityId" column="speciality_id"/>
+        <result property="general" column="is_general"/>
+        <result property="teacherName" column="teacherName"/>
+        <result property="collegeName" column="collegeName"/>
+        <result property="specialityName" column="specialityName"/>
+    </resultMap>
+
+    <sql id="BaseSelect">
+        course.id,
+        course.name,
+        course.content,
+        course.credit,
+        course.teacher_id,
+        course.num,
+        course.time,
+        course.location,
+        course.college_id,
+        course.already_num,
+        course.speciality_id,
+        course.is_general,
+        teacher.name AS teacherName,
+        college.name AS collegeName,
+        speciality.name AS specialityName
+    </sql>
+
+    <insert id="insert" parameterType="com.example.entity.Course" useGeneratedKeys="true" keyProperty="id">
+        insert into course (id, name, content, credit, teacher_id, num, time, location, college_id, speciality_id, is_general, already_num)
+        values (#{id}, #{name}, #{content}, #{credit}, #{teacherId}, #{num}, #{time}, #{location}, #{collegeId}, #{specialityId}, #{general}, #{alreadyNum})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Course">
+        update course set
+            name = #{name},
+            content = #{content},
+            credit = #{credit},
+            teacher_id = #{teacherId},
+            num = #{num},
+            time = #{time},
+            location = #{location},
+            college_id = #{collegeId},
+            speciality_id = #{specialityId},
+            is_general = #{general},
+            already_num = #{alreadyNum}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from course where id = #{id}
+    </delete>
+
+    <select id="selectAll" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        order by course.id
+    </select>
+
+    <select id="selectByName" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        where course.name like concat('%', #{name}, '%')
+        order by course.id
+    </select>
+
+    <select id="selectByNameAndTeacherId" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        where course.name like concat('%', #{name}, '%') and course.teacher_id = #{teacherId}
+        order by course.id
+    </select>
+
+    <select id="selectAllByTeacherId" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        where course.teacher_id = #{teacherId}
+        order by course.id
+    </select>
+
+    <select id="selectForStudent" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        join student on student.id = #{studentId}
+        where 1 = 1
+        <if test="name != null and name != ''">
+            and course.name like concat('%', #{name}, '%')
+        </if>
+        and (
+            course.college_id = student.college_id
+            or course.is_general = 1
+        )
+        and (
+            course.is_general = 1
+            or course.speciality_id is null
+            or student.speciality_id is null
+            or course.speciality_id = student.speciality_id
+        )
+        and course.id not in (
+            select ifnull(course_id, -1) from student_completed_course where student_id = #{studentId}
+        )
+        order by course.id
+    </select>
+
+    <select id="selectById" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        where course.id = #{courseId}
+    </select>
+
+    <select id="selectPrerequisiteIds" parameterType="int" resultType="java.lang.Integer">
+        select prerequisite_id from course_prerequisite where course_id = #{courseId}
+        order by prerequisite_id
+    </select>
+
+    <select id="selectPrerequisiteNames" parameterType="int" resultType="java.lang.String">
+        select pre.name
+        from course_prerequisite cp
+        left join course pre on cp.prerequisite_id = pre.id
+        where cp.course_id = #{courseId}
+        order by pre.name
+    </select>
+
+    <delete id="deletePrerequisitesByCourseId">
+        delete from course_prerequisite where course_id = #{courseId}
+    </delete>
+
+    <insert id="insertPrerequisites">
+        insert into course_prerequisite (course_id, prerequisite_id)
+        values
+        <foreach collection="prerequisiteIds" item="pid" separator=",">
+            (#{courseId}, #{pid})
+        </foreach>
+    </insert>
+
+    <select id="selectRecommendCourses" resultMap="CourseResultMap">
+        select
+        <include refid="BaseSelect"/>
+        from course
+        left join college on course.college_id = college.id
+        left join teacher on course.teacher_id = teacher.id
+        left join speciality on course.speciality_id = speciality.id
+        join student on student.id = #{studentId}
+        where course.id not in (
+            select ifnull(course_id, -1) from choice where student_id = #{studentId}
+        )
+        and course.id not in (
+            select ifnull(course_id, -1) from student_completed_course where student_id = #{studentId}
+        )
+        and (
+            course.college_id = student.college_id
+            or course.is_general = 1
+        )
+        and (
+            course.is_general = 1
+            or course.speciality_id is null
+            or student.speciality_id is null
+            or course.speciality_id = student.speciality_id
+        )
+        and not exists (
+            select 1
+            from course_prerequisite cp
+            where cp.course_id = course.id
+              and cp.prerequisite_id not in (
+                    select ifnull(scc.course_id, -1)
+                    from student_completed_course scc
+                    where scc.student_id = #{studentId}
+              )
+        )
+        order by course.credit desc, course.name asc
+    </select>
+</mapper>

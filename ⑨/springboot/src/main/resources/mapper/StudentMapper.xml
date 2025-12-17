@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentMapper">
+
+    <insert id="insert" parameterType="com.example.entity.Student" useGeneratedKeys="true">
+        insert into student (username, password, name, avatar, role, sex, code, college_id, speciality_id, score)
+        values (#{username}, #{password}, #{name}, #{avatar}, #{role}, #{sex}, #{code}, #{collegeId}, #{specialityId}, #{score})
+    </insert>
+
+    <update id="updateById" parameterType="com.example.entity.Student">
+        update student
+        set username = #{username}, password = #{password}, name = #{name}, avatar = #{avatar}, role = #{role}, sex = #{sex}, code = #{code},
+            college_id = #{collegeId}, speciality_id = #{specialityId}, score = #{score}
+        where id = #{id}
+    </update>
+
+    <update id="updateScore">
+        update student set score = #{score}
+        where id = #{id}
+    </update>
+
+    <select id="selectList" resultType="com.example.entity.Student">
+        select student.*, college.name as collegeName, speciality.name as specialityName
+        from student
+        left join college on student.college_id = college.id
+        left join speciality on student.speciality_id = speciality.id
+        <where>
+            <if test="name != null and name != ''">
+                student.name like concat('%', #{name}, '%')
+            </if>
+            <if test="collegeId != null">
+                and student.college_id = #{collegeId}
+            </if>
+            <if test="specialityId != null">
+                and student.speciality_id = #{specialityId}
+            </if>
+        </where>
+        order by student.id desc
+    </select>
+
+</mapper>
